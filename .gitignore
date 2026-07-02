@@ -1,0 +1,21 @@
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Dataset inspection outputs
+dataset_inspection/
+
+# Downloaded/exported junk
+project.zip
+Kaggel notebook/
+*.ipynb
+
+# Local data
+data/
+ISIC_*/
+ISBI*/

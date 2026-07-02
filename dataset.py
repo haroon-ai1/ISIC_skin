@@ -13,7 +13,7 @@ from torchvision import transforms
 MALIGNANT = {"MEL", "BCC", "AK", "SCC"}
 BENIGN = {"NV", "BKL", "DF", "VASC"}
 
-NUM_WORKERS = int(os.getenv("NUM_WORKERS", "4"))
+NUM_WORKERS = int(os.getenv("NUM_WORKERS", "2"))
 
 
 def resolve_nested(root: str | Path) -> Path:
@@ -218,21 +218,15 @@ def get_loaders(
     train_ds = _subset_with_transform(full, train_idx, TRAIN_TRANSFORM)
     val_ds = _subset_with_transform(full, val_idx, VAL_TRANSFORM)
 
-    persistent = num_workers > 0
-    train_loader = DataLoader(
-        train_ds,
+    loader_kwargs = dict(
         batch_size=batch_size,
-        shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=persistent,
+        pin_memory=False,
+        persistent_workers=False,
     )
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=persistent,
-    )
+    if num_workers > 0:
+        loader_kwargs["prefetch_factor"] = 2
+
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
     return train_loader, val_loader

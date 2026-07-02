@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 from pathlib import Path
 
@@ -226,6 +227,9 @@ def main() -> None:
             best_auroc = auroc
             save_checkpoint(model, optimizer, epoch, auroc, CKPT_DIR / "best.pt")
             print(f"        ^ new best -> checkpoint saved (AUROC {auroc:.4f})")
+
+        gc.collect()
+        torch.cuda.empty_cache()
 
     print(">>> training loop finished", flush=True)
     print(f"\nDone. Best val AUROC: {best_auroc:.4f}  Checkpoint: {CKPT_DIR / 'best.pt'}")
