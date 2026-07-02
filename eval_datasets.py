@@ -94,27 +94,21 @@ class ISIC2024Dataset(Dataset):
 class ISIC2020Dataset(Dataset):
     """ISIC 2020 eval dataset (Kaggle: nischaydnk/isic-2020-jpg-256x256-resized).
 
-    Image column: 'image_name'. Label preference: 'target' (0/1) first, then
-    fall back to 'benign_malignant' (string) if 'target' isn't present.
-    Labels: 0 = benign, 1 = malignant.
+    CSV columns (confirmed): unnamed pandas index at col 0, `isic_id`, `patient_id`,
+    `target`. `isic_id` already includes the "ISIC_" prefix (e.g. "ISIC_0015719"),
+    so `.jpg` is appended when building the image path. `target` is already 0/1 —
+    used directly as the malignant label.
     """
 
     def __init__(self, image_dir: str | Path, csv_path: str | Path, transform=VAL_TRANSFORM):
         self.image_dir = Path(image_dir)
         self.transform = transform
 
-        df = pd.read_csv(csv_path)
-        self.image_ids: list[str] = df["image_name"].tolist()
+        # index_col=0 drops the unnamed leading column from a prior to_csv()
+        df = pd.read_csv(csv_path, index_col=0)
 
-        if "target" in df.columns:
-            self.labels: list[int] = df["target"].astype(int).tolist()
-        elif "benign_malignant" in df.columns:
-            self.labels = (df["benign_malignant"] == "malignant").astype(int).tolist()
-        else:
-            raise KeyError(
-                f"Expected 'target' or 'benign_malignant' column in {csv_path}. "
-                f"Got: {df.columns.tolist()}"
-            )
+        self.image_ids: list[str] = df["isic_id"].tolist()
+        self.labels: list[int]    = df["target"].astype(int).tolist()
 
     def __len__(self) -> int:
         return len(self.image_ids)
