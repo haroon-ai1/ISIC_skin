@@ -58,8 +58,14 @@ def train_one_epoch(
         with torch.amp.autocast("cuda", enabled=use_amp):
             logits = model(imgs).squeeze(1)
             loss   = criterion(logits, labels)
+        if i == 0:
+            torch.cuda.synchronize()
+            print(">>> forward pass done", flush=True)
 
         scaler.scale(loss).backward()
+        if i == 0:
+            torch.cuda.synchronize()
+            print(">>> backward pass done", flush=True)
         scaler.unscale_(optimizer)
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         scaler.step(optimizer)
@@ -123,6 +129,8 @@ def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--smoke_test", action="store_true",
                    help="Quick sanity run: batch=4, 2000 train / 500 val samples, 1 epoch")
+    p.add_argument("--single_gpu", action="store_true",
+                   help="Skip DataParallel wrap; run on cuda:0 only. Workaround for T4x2 DP deadlocks.")
     return p.parse_args()
 
 
@@ -151,7 +159,8 @@ def main() -> None:
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_gpus = torch.cuda.device_count()
-    print(f"Device: {device}  |  GPUs visible: {n_gpus}")
+    print(f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', '<unset>')}", flush=True)
+    print(f"Device: {device}  |  GPUs visible: {n_gpus}  |  single_gpu={args.single_gpu}", flush=True)
     if smoke:
         print("[smoke_test] batch=4 | train<=2000 | val<=500 | 1 epoch | img=288x288")
 
@@ -185,7 +194,7 @@ def main() -> None:
 
     # ── model ─────────────────────────────────────────────────────────────────
     model = build_model(pretrained=True).to(device)
-    if n_gpus > 1:
+    if n_gpus > 1 and not args.single_gpu:
         model = nn.DataParallel(model)
         print(f"Wrapped in DataParallel across {n_gpus} GPUs")
 
