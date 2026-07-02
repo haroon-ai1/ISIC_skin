@@ -6,9 +6,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
 from dataset import ISICDataset, VAL_TRANSFORM, resolve_nested
-
-# ── single swap point for Kaggle (mirrors train.py) ──────────────────────────
-DATA_ROOT = Path("..")  # Kaggle: Path("/kaggle/input/...")
+from setup_data import DATA_ROOT
 
 # 2019 (training) — repeated here so the summary can report it in one place.
 ISIC2019_IMG_DIR = resolve_nested(DATA_ROOT / "ISIC_2019_Training_Input")

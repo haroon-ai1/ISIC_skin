@@ -11,12 +11,12 @@ from torch.utils.data import DataLoader, Subset
 from dataset import get_loaders, resolve_nested
 from eval_datasets import print_dataset_summary
 from model import build_model
+from setup_data import DATA_ROOT, IS_KAGGLE, setup_data
 
-# ── single swap point for Kaggle ─────────────────────────────────────────────
-DATA_ROOT = Path("..")                              # Kaggle: Path("/kaggle/input/isic-2019")
+# ── paths (absolute; DATA_ROOT auto-picks /kaggle/working/data or C:/ISIC) ───
 IMAGE_DIR = resolve_nested(DATA_ROOT / "ISIC_2019_Training_Input")
 CSV_PATH  = DATA_ROOT / "ISIC_2019_Training_GroundTruth.csv"
-CKPT_DIR  = Path("checkpoints")
+CKPT_DIR  = Path("/kaggle/working/checkpoints") if IS_KAGGLE else Path("checkpoints")
 
 # ── hyperparameters ───────────────────────────────────────────────────────────
 BATCH_SIZE   = 64      # split across 2 GPUs by DataParallel → 32 per card
@@ -150,7 +150,8 @@ def main() -> None:
     if smoke:
         print("[smoke_test] batch=4 | train<=2000 | val<=500 | 1 epoch | img=288x288")
 
-    # Startup sanity: resolved paths + counts for all datasets.
+    # Ensure downloadable datasets exist; then show resolved paths + counts.
+    setup_data()
     print_dataset_summary()
 
     # ── data ──────────────────────────────────────────────────────────────────
