@@ -12,6 +12,24 @@ from torchvision import transforms
 MALIGNANT = {"MEL", "BCC", "AK", "SCC"}
 BENIGN = {"NV", "BKL", "DF", "VASC"}
 
+
+def resolve_nested(root: str | Path) -> Path:
+    """Auto-descend one level if `root` contains exactly one same-named subdirectory.
+
+    Handles the double-nesting pattern from official ISIC zip extractions
+    (e.g., .../ISIC_2024_Training_Input/ISIC_2024_Training_Input/). Only
+    subdirectories are counted; stray files at the top level are ignored.
+    Returns `root` unchanged if it doesn't exist, isn't a directory, or the
+    pattern doesn't match.
+    """
+    root = Path(root)
+    if not root.exists() or not root.is_dir():
+        return root
+    subdirs = [p for p in root.iterdir() if p.is_dir()]
+    if len(subdirs) == 1 and subdirs[0].name == root.name:
+        return subdirs[0]
+    return root
+
 _IMAGENET_MEAN = [0.485, 0.456, 0.406]
 _IMAGENET_STD = [0.229, 0.224, 0.225]
 

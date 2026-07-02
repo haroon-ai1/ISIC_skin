@@ -8,12 +8,13 @@ import torch.nn as nn
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 from torch.utils.data import DataLoader, Subset
 
-from dataset import get_loaders
+from dataset import get_loaders, resolve_nested
+from eval_datasets import print_dataset_summary
 from model import build_model
 
 # ── single swap point for Kaggle ─────────────────────────────────────────────
 DATA_ROOT = Path("..")                              # Kaggle: Path("/kaggle/input/isic-2019")
-IMAGE_DIR = DATA_ROOT / "ISIC_2019_Training_Input"
+IMAGE_DIR = resolve_nested(DATA_ROOT / "ISIC_2019_Training_Input")
 CSV_PATH  = DATA_ROOT / "ISIC_2019_Training_GroundTruth.csv"
 CKPT_DIR  = Path("checkpoints")
 
@@ -148,6 +149,9 @@ def main() -> None:
     print(f"Device: {device}  |  GPUs visible: {n_gpus}")
     if smoke:
         print("[smoke_test] batch=4 | train<=2000 | val<=500 | 1 epoch | img=288x288")
+
+    # Startup sanity: resolved paths + counts for all datasets.
+    print_dataset_summary()
 
     # ── data ──────────────────────────────────────────────────────────────────
     train_loader, val_loader = get_loaders(
