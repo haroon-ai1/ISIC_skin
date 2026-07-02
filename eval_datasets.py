@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -20,8 +21,11 @@ ISIC2016_CSV     = DATA_ROOT / "ISBI2016_ISIC_Part3_Training_GroundTruth.csv"
 ISIC2024_IMG_DIR = resolve_nested(DATA_ROOT / "ISIC_2024_Training_Input")
 ISIC2024_CSV     = DATA_ROOT / "ISIC_2024_Training_GroundTruth.csv"
 
-# 2020 — Kaggle-only absolute path (won't exist locally; that's fine)
-_ISIC2020_ROOT   = Path("/kaggle/input/datasets/nischaydnk/isic-2020-jpg-256x256-resized")
+# 2020 — Kaggle default; override with ISIC2020_ROOT env var (e.g. Colab /content/isic-2020).
+_ISIC2020_ROOT   = Path(os.environ.get(
+    "ISIC2020_ROOT",
+    "/kaggle/input/datasets/nischaydnk/isic-2020-jpg-256x256-resized",
+))
 ISIC2020_IMG_DIR = resolve_nested(_ISIC2020_ROOT / "train-image" / "image")
 ISIC2020_CSV     = _ISIC2020_ROOT / "train-metadata.csv"
 

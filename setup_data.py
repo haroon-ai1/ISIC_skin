@@ -13,6 +13,7 @@ every dataset is already present with the expected file count.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import zipfile
@@ -22,7 +23,11 @@ from dataset import resolve_nested
 
 # ── environment detection + fixed roots ──────────────────────────────────────
 IS_KAGGLE = Path("/kaggle/working").exists()
-DATA_ROOT = Path("/kaggle/working/data") if IS_KAGGLE else Path("C:/ISIC")
+_DATA_ROOT_ENV = os.environ.get("DATA_ROOT")
+if _DATA_ROOT_ENV:
+    DATA_ROOT = Path(_DATA_ROOT_ENV)
+else:
+    DATA_ROOT = Path("/kaggle/working/data") if IS_KAGGLE else Path("C:/ISIC")
 
 # ── dataset specs ────────────────────────────────────────────────────────────
 _S3 = "https://isic-archive.s3.amazonaws.com/challenges"

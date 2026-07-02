@@ -18,7 +18,11 @@ from setup_data import DATA_ROOT, IS_KAGGLE, setup_data
 # ── paths (absolute; DATA_ROOT auto-picks /kaggle/working/data or C:/ISIC) ───
 IMAGE_DIR = resolve_nested(DATA_ROOT / "ISIC_2019_Training_Input")
 CSV_PATH  = DATA_ROOT / "ISIC_2019_Training_GroundTruth.csv"
-CKPT_DIR  = Path("/kaggle/working/checkpoints") if IS_KAGGLE else Path("checkpoints")
+_CKPT_DIR_ENV = os.environ.get("CKPT_DIR")
+if _CKPT_DIR_ENV:
+    CKPT_DIR = Path(_CKPT_DIR_ENV)
+else:
+    CKPT_DIR = Path("/kaggle/working/checkpoints") if IS_KAGGLE else Path("checkpoints")
 
 # ── hyperparameters ───────────────────────────────────────────────────────────
 BATCH_SIZE   = 64      # split across 2 GPUs by DataParallel → 32 per card
@@ -201,7 +205,11 @@ def main() -> None:
     # ── optimiser + schedule + AMP ────────────────────────────────────────────
     # AMP disabled in smoke mode: small batch (4) + fp16 causes BN variance
     # instability on Pascal GPUs; fp32 is fine for a pipeline correctness check.
+    # USE_AMP=0 forces off regardless of smoke — workaround for T4x2 AMP+DP hangs.
     use_amp = not smoke
+    if os.environ.get("USE_AMP", "1") == "0":
+        use_amp = False
+        print(">>> USE_AMP=0: autocast/GradScaler disabled", flush=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=num_epochs, eta_min=1e-6
