@@ -1,4 +1,5 @@
 import math
+import os
 import random
 from pathlib import Path
 
@@ -11,6 +12,8 @@ from torchvision import transforms
 
 MALIGNANT = {"MEL", "BCC", "AK", "SCC"}
 BENIGN = {"NV", "BKL", "DF", "VASC"}
+
+NUM_WORKERS = int(os.getenv("NUM_WORKERS", "4"))
 
 
 def resolve_nested(root: str | Path) -> Path:
@@ -198,7 +201,7 @@ def get_loaders(
     csv_path: str | Path,
     val_split: float = 0.15,
     batch_size: int = 32,
-    num_workers: int = 4,
+    num_workers: int = NUM_WORKERS,
     seed: int = 42,
 ) -> tuple[DataLoader, DataLoader]:
     """Return (train_loader, val_loader) with a stratified split on the binary label."""

@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,7 @@ NUM_EPOCHS   = 20
 LR           = 3e-4
 WEIGHT_DECAY = 1e-2
 VAL_SPLIT    = 0.15
-NUM_WORKERS  = 4
+NUM_WORKERS  = int(os.getenv("NUM_WORKERS", "4"))
 SEED         = 42
 
 
@@ -45,7 +46,10 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
 
-    for imgs, labels in loader:
+    print(">>> train_one_epoch: about to iterate over loader", flush=True)
+    for i, (imgs, labels) in enumerate(loader):
+        if i == 0:
+            print(">>> train_one_epoch: first batch received from loader", flush=True)
         imgs   = imgs.to(device, non_blocking=True)
         labels = labels.to(device, dtype=torch.float32, non_blocking=True)
 
@@ -155,6 +159,7 @@ def main() -> None:
     print_dataset_summary()
 
     # ── data ──────────────────────────────────────────────────────────────────
+    print(f">>> creating train/val loaders (num_workers={NUM_WORKERS})", flush=True)
     train_loader, val_loader = get_loaders(
         IMAGE_DIR,
         CSV_PATH,
@@ -166,6 +171,7 @@ def main() -> None:
     if smoke:
         train_loader = _trim_loader(train_loader, 2000, batch_size, shuffle=True)
         val_loader   = _trim_loader(val_loader,    500, batch_size, shuffle=False)
+    print(">>> loaders created", flush=True)
 
     n_train = len(train_loader.dataset)
     n_val   = len(val_loader.dataset)
@@ -202,8 +208,11 @@ def main() -> None:
         _, pre_auroc, pre_bal_acc = evaluate(model, val_loader, criterion, device, use_amp)
         print(f"{'pre':>5}  {'---':>9}  {'---':>7}  {pre_auroc:>6.4f}  {pre_bal_acc:>6.4f}  {'---':>8}  <- pretrained baseline")
 
+    print(">>> entering training loop", flush=True)
     for epoch in range(1, num_epochs + 1):
+        print(f">>> epoch {epoch}: starting train_one_epoch", flush=True)
         train_loss                = train_one_epoch(model, train_loader, optimizer, scaler, criterion, device, use_amp)
+        print(f">>> epoch {epoch}: train_one_epoch returned, starting evaluate", flush=True)
         val_loss, auroc, bal_acc  = evaluate(model, val_loader, criterion, device, use_amp)
         scheduler.step()
 
@@ -218,6 +227,7 @@ def main() -> None:
             save_checkpoint(model, optimizer, epoch, auroc, CKPT_DIR / "best.pt")
             print(f"        ^ new best -> checkpoint saved (AUROC {auroc:.4f})")
 
+    print(">>> training loop finished", flush=True)
     print(f"\nDone. Best val AUROC: {best_auroc:.4f}  Checkpoint: {CKPT_DIR / 'best.pt'}")
 
 
